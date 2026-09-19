@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   TouchableOpacity,
   Platform,
@@ -14,6 +15,8 @@ import { StatusBar } from 'expo-status-bar';
 import {
   ArrowLeft,
   Check,
+  Plus,
+  X,
   Activity,
   Target,
   Brain,
@@ -28,6 +31,10 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 import { Button } from '../../src/components/ui/Button';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // 4 Archetypes data matching NIKA business & technical models
 export interface ArchetypeInfo {
@@ -89,13 +96,18 @@ const ARCHETYPES: ArchetypeInfo[] = [
   },
 ];
 
-const LIFE_PILLARS = [
+const MAIN_LIFE_PILLARS = [
   { id: 'salud', name: 'Salud & Fisiología', desc: 'Sueño, recuperación, nutrición y actividad física', icon: Activity },
   { id: 'rendimiento', name: 'Rendimiento & Foco', desc: 'Disciplina diaria, trabajo profundo y objetivos clave', icon: Target },
   { id: 'claridad', name: 'Claridad Mental', desc: 'Gestión de estrés, introspección y balance cognitivo', icon: Brain },
   { id: 'finanzas', name: 'Finanzas & Proyectos', desc: 'Emprendimiento, inversiones y metas profesionales', icon: Briefcase },
-  { id: 'vinculos', name: 'Vínculos & Familia', desc: 'Relaciones de calidad, soporte emocional y presencia', icon: Heart },
-  { id: 'aprendizaje', name: 'Aprendizaje & Maestría', desc: 'Lectura, adquisición de habilidades y curiosidad', icon: BookOpen },
+];
+
+const ADDITIONAL_LIFE_PILLARS = [
+  { id: 'vinculos', name: 'Vínculos & Familia' },
+  { id: 'aprendizaje', name: 'Aprendizaje & Maestría' },
+  { id: 'espiritualidad', name: 'Espiritualidad & Calma' },
+  { id: 'creatividad', name: 'Creatividad & Ocio' },
 ];
 
 export default function OnboardingScreen() {
@@ -112,8 +124,12 @@ export default function OnboardingScreen() {
   const [selectedPillars, setSelectedPillars] = useState<string[]>([
     'Salud & Fisiología',
     'Rendimiento & Foco',
-    'Claridad Mental',
+    'Finanzas & Proyectos',
   ]);
+
+  const [customPillars, setCustomPillars] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState<string>('');
+  const [isAddingCustom, setIsAddingCustom] = useState<boolean>(false);
 
   // Determine smart recommended archetype based on Step 1 and Step 2
   const recommendedArchetypeId = useMemo(() => {
@@ -131,14 +147,53 @@ export default function OnboardingScreen() {
 
   const togglePillar = (pillarName: string) => {
     if (selectedPillars.includes(pillarName)) {
-      if (selectedPillars.length > 2) {
+      if (selectedPillars.length > 1) {
         setSelectedPillars(selectedPillars.filter((p) => p !== pillarName));
       }
     } else {
-      if (selectedPillars.length < 5) {
+      if (selectedPillars.length < 7) {
         setSelectedPillars([...selectedPillars, pillarName]);
       }
     }
+  };
+
+  const handleAddCustomPillar = () => {
+    const trimmed = customInput.trim();
+    if (!trimmed) return;
+
+    // Capitalize first letter of each word for clean presentation
+    const formattedName = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+
+    const allStandardNames = [
+      ...MAIN_LIFE_PILLARS.map((p) => p.name.toLowerCase()),
+      ...ADDITIONAL_LIFE_PILLARS.map((p) => p.name.toLowerCase()),
+    ];
+
+    const alreadyCustom = customPillars.some((p) => p.toLowerCase() === formattedName.toLowerCase());
+
+    if (!allStandardNames.includes(formattedName.toLowerCase()) && !alreadyCustom) {
+      setCustomPillars((prev) => [...prev, formattedName]);
+      if (selectedPillars.length < 7 && !selectedPillars.includes(formattedName)) {
+        setSelectedPillars((prev) => [...prev, formattedName]);
+      }
+    } else {
+      // Find standard or existing name casing
+      const foundMatch = [...MAIN_LIFE_PILLARS, ...ADDITIONAL_LIFE_PILLARS].find(
+        (p) => p.name.toLowerCase() === formattedName.toLowerCase()
+      );
+      const targetName = foundMatch ? foundMatch.name : formattedName;
+      if (!selectedPillars.includes(targetName) && selectedPillars.length < 7) {
+        setSelectedPillars((prev) => [...prev, targetName]);
+      }
+    }
+
+    setCustomInput('');
+    setIsAddingCustom(false);
+  };
+
+  const handleRemoveCustomPillar = (pillarName: string) => {
+    setCustomPillars((prev) => prev.filter((p) => p !== pillarName));
+    setSelectedPillars((prev) => prev.filter((p) => p !== pillarName));
   };
 
   const handleNext = () => {
@@ -176,8 +231,8 @@ export default function OnboardingScreen() {
 
       <SafeAreaView className="flex-1" edges={['top']}>
         {/* Top Header & Progress Bar */}
-        <View className="px-6 pt-3 pb-3 border-b border-white/5">
-          <View className="flex-row items-center justify-between mb-3">
+        <View className="px-6 pt-9 pb-4 border-b border-white/5">
+          <View className="flex-row items-center justify-between mb-3.5">
             <TouchableOpacity
               onPress={handleBack}
               activeOpacity={0.7}
@@ -188,7 +243,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
 
             <View className="items-center">
-              <Text className="font-rethink-bold text-[14px] uppercase tracking-wider text-gray-300">
+              <Text className="font-rethink-bold text-[13px] uppercase tracking-widest text-gray-300">
                 Configuración Inicial
               </Text>
               <Text className="font-rethink text-xs text-[#FF6B00] mt-0.5">
@@ -219,6 +274,7 @@ export default function OnboardingScreen() {
         {/* Scrollable Content */}
         <ScrollView
           className="flex-1"
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: 20,
@@ -440,23 +496,13 @@ export default function OnboardingScreen() {
                             />
                           </View>
                           <View className="flex-1">
-                            <View className="flex-row items-center flex-wrap gap-2">
-                              <Text
-                                className={`font-rethink-bold text-base ${
-                                  isSelected ? 'text-white' : 'text-gray-200'
-                                }`}
-                              >
-                                {arch.name}
-                              </Text>
-                              {isRecommended && (
-                                <View className="flex-row items-center gap-1 bg-[#FF6B00]/10 px-2 py-0.5 rounded-full border border-[#FF6B00]/25">
-                                  <Sparkles size={10} color="#FF6B00" strokeWidth={2.5} />
-                                  <Text className="font-rethink-bold text-[10px] text-[#FF6B00] tracking-wide">
-                                    Recomendado
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
+                            <Text
+                              className={`font-rethink-bold text-base ${
+                                isSelected ? 'text-white' : 'text-gray-200'
+                              }`}
+                            >
+                              {arch.name}
+                            </Text>
                             <Text
                               className={`font-rethink text-xs mt-0.5 ${
                                 isSelected ? 'text-[#FF6B00]' : 'text-gray-400'
@@ -493,7 +539,7 @@ export default function OnboardingScreen() {
                         <View className="mt-3 pt-3 border-t border-white/10">
                           <View className="bg-[#0A0A0F] rounded-xl p-3.5 border border-white/5">
                             <Text className="font-rethink-bold text-[10px] text-[#FF6B00] uppercase tracking-wider mb-1">
-                              Voz del mentor en tu diario
+                              Ejemplo de feedback diario
                             </Text>
                             <Text className="font-rethink text-xs text-gray-300 leading-4.5">
                               {arch.sampleFeedback}
@@ -511,24 +557,38 @@ export default function OnboardingScreen() {
           {/* ================= STEP 4: PILARES DE VIDA ================= */}
           {step === 4 && (
             <View>
-              <Text className="font-rethink-extrabold text-[26px] text-white tracking-tight leading-8 mb-2">
+              <Text className="font-rethink-extrabold text-[24px] text-white tracking-tight leading-7 mb-1.5">
                 Tus Pilares de Vida
               </Text>
-              <Text className="font-rethink text-sm text-gray-400 mb-5 leading-5">
-                NIKA evaluará diariamente el equilibrio de estos pilares. Elige entre 3 y 5 dimensiones principales:
+              <Text className="font-rethink text-xs text-gray-400 mb-4 leading-4.5">
+                NIKA evaluará diariamente el equilibrio de estas áreas. Elige entre 3 y 7 dimensiones:
               </Text>
 
-              <View className="flex-row items-center justify-between mb-4 px-1">
-                <Text className="font-rethink-bold text-xs uppercase tracking-wider text-gray-400">
+              <View className="flex-row items-center justify-between mb-3 px-1">
+                <Text className="font-rethink-bold text-[11px] uppercase tracking-wider text-gray-400">
                   Pilares seleccionados
                 </Text>
-                <Text className="font-rethink-bold text-xs text-[#FF6B00]">
-                  {selectedPillars.length} de 5
-                </Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Text
+                    className={`font-rethink-bold text-xs ${
+                      selectedPillars.length === 7 ? 'text-[#FF6B00]' : 'text-gray-300'
+                    }`}
+                  >
+                    {selectedPillars.length} de 7
+                  </Text>
+                  {selectedPillars.length === 7 && (
+                    <View className="bg-[#FF6B00]/15 px-1.5 py-0.5 rounded-md border border-[#FF6B00]/30">
+                      <Text className="font-rethink-bold text-[9px] text-[#FF6B00] uppercase">
+                        Máx.
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
-              <View className="gap-3">
-                {LIFE_PILLARS.map((pillar) => {
+              {/* 4 Opciones Principales */}
+              <View className="gap-2.5">
+                {MAIN_LIFE_PILLARS.map((pillar) => {
                   const isSelected = selectedPillars.includes(pillar.name);
                   const PillarIcon = pillar.icon;
                   return (
@@ -536,7 +596,7 @@ export default function OnboardingScreen() {
                       key={pillar.id}
                       activeOpacity={0.8}
                       onPress={() => togglePillar(pillar.name)}
-                      className={`p-4 rounded-2xl border transition-all ${
+                      className={`p-3.5 rounded-2xl border transition-all ${
                         isSelected
                           ? 'bg-[#181824] border-[#FF6B00]'
                           : 'bg-[#12121A] border-white/5'
@@ -545,43 +605,167 @@ export default function OnboardingScreen() {
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center flex-1 pr-3">
                           <View
-                            className={`w-10 h-10 rounded-xl items-center justify-center mr-3.5 ${
+                            className={`w-9 h-9 rounded-xl items-center justify-center mr-3 ${
                               isSelected ? 'bg-[#FF6B00]/15' : 'bg-white/5'
                             }`}
                           >
                             <PillarIcon
-                              size={20}
+                              size={18}
                               color={isSelected ? '#FF6B00' : '#9CA3AF'}
                               strokeWidth={2}
                             />
                           </View>
                           <View className="flex-1">
                             <Text
-                              className={`font-rethink-bold text-base mb-0.5 ${
+                              className={`font-rethink-bold text-[14px] leading-5 mb-0.5 ${
                                 isSelected ? 'text-white' : 'text-gray-300'
                               }`}
                             >
                               {pillar.name}
                             </Text>
-                            <Text className="font-rethink text-xs text-gray-400 leading-4">
+                            <Text className="font-rethink text-[11px] text-gray-400 leading-4" numberOfLines={1}>
                               {pillar.desc}
                             </Text>
                           </View>
                         </View>
 
                         <View
-                          className={`w-6 h-6 rounded-full border items-center justify-center ${
+                          className={`w-5 h-5 rounded-full border items-center justify-center ${
                             isSelected
                               ? 'bg-[#FF6B00] border-[#FF6B00]'
                               : 'border-gray-600 bg-transparent'
                           }`}
                         >
-                          {isSelected && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
+                          {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                         </View>
                       </View>
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+
+              {/* Otras Dimensiones & Personalizados */}
+              <View className="mt-4">
+                <Text className="font-rethink-bold text-[11px] uppercase tracking-wider text-gray-400 mb-2 px-1">
+                  Otras dimensiones
+                </Text>
+                <View className="flex-row flex-wrap items-center gap-2">
+                  {ADDITIONAL_LIFE_PILLARS.map((pillar) => {
+                    const isSelected = selectedPillars.includes(pillar.name);
+                    return (
+                      <TouchableOpacity
+                        key={pillar.id}
+                        activeOpacity={0.7}
+                        onPress={() => togglePillar(pillar.name)}
+                        className={`px-3.5 py-2 rounded-xl border transition-all ${
+                          isSelected
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00]'
+                            : 'bg-[#12121A] border-white/10'
+                        }`}
+                      >
+                        <Text
+                          className={`font-rethink-medium text-xs ${
+                            isSelected ? 'text-[#FF6B00] font-rethink-bold' : 'text-gray-300'
+                          }`}
+                        >
+                          {pillar.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+
+                  {/* Pilares personalizados agregados por el usuario */}
+                  {customPillars.map((pillarName) => {
+                    const isSelected = selectedPillars.includes(pillarName);
+                    return (
+                      <View
+                        key={pillarName}
+                        className={`flex-row items-center pl-3.5 pr-2 py-1.5 rounded-xl border ${
+                          isSelected
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00]'
+                            : 'bg-[#12121A] border-white/10'
+                        }`}
+                      >
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => togglePillar(pillarName)}
+                        >
+                          <Text
+                            className={`font-rethink-medium text-xs mr-1.5 ${
+                              isSelected ? 'text-[#FF6B00] font-rethink-bold' : 'text-gray-300'
+                            }`}
+                          >
+                            {pillarName}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleRemoveCustomPillar(pillarName)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          className="p-1 rounded-full bg-white/5"
+                        >
+                          <X size={11} color={isSelected ? '#FF6B00' : '#9CA3AF'} strokeWidth={2.5} />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+
+                  {/* Botón para abrir input inline */}
+                  {!isAddingCustom && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+                          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                        }
+                        setIsAddingCustom(true);
+                      }}
+                      className="flex-row items-center px-3 py-2 rounded-xl border border-dashed border-white/20 bg-white/[0.02]"
+                    >
+                      <Plus size={13} color="#9CA3AF" />
+                      <Text className="font-rethink-medium text-xs text-gray-400 ml-1">
+                        Escribir otro
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Input inline para escribir pilar personalizado */}
+                {isAddingCustom && (
+                  <View className="mt-3 flex-row items-center gap-2">
+                    <TextInput
+                      value={customInput}
+                      onChangeText={setCustomInput}
+                      placeholder="Ej. Espiritualidad, Lectura, Finanzas..."
+                      placeholderTextColor="#6B7280"
+                      maxLength={32}
+                      autoFocus
+                      returnKeyType="done"
+                      onSubmitEditing={handleAddCustomPillar}
+                      className="flex-1 bg-[#12121A] border border-[#FF6B00]/60 rounded-xl px-3.5 py-2 text-white font-rethink text-xs"
+                    />
+                    <TouchableOpacity
+                      onPress={handleAddCustomPillar}
+                      disabled={!customInput.trim()}
+                      className={`px-3.5 py-2 rounded-xl items-center justify-center ${
+                        customInput.trim() ? 'bg-[#FF6B00]' : 'bg-gray-800 opacity-50'
+                      }`}
+                    >
+                      <Text className="font-rethink-bold text-xs text-white">Añadir</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+                          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                        }
+                        setIsAddingCustom(false);
+                        setCustomInput('');
+                      }}
+                      className="p-2"
+                    >
+                      <X size={16} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -595,6 +779,7 @@ export default function OnboardingScreen() {
           <Button
             title={step === 4 ? 'Finalizar y Entrar al Espejo' : 'Continuar'}
             variant="primary"
+            disabled={step === 4 && (selectedPillars.length < 3 || selectedPillars.length > 7)}
             onPress={handleNext}
             loading={loading}
           />
