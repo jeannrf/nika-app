@@ -51,7 +51,7 @@ export default function RegisterScreen() {
 
       <SafeAreaView className="flex-1" edges={['top']}>
         {/* Top-Left Back Arrow to Welcome */}
-        <View className="px-6 pt-3 pb-1 z-20">
+        <View className="px-6 pt-[39px] pb-2 z-20">
           <TouchableOpacity
             onPress={() => router.push('/(auth)/welcome')}
             activeOpacity={0.7}
