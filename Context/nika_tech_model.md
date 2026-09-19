@@ -330,14 +330,12 @@ sequenceDiagram
 - **Base de Código Única**: Una sola base de código en TypeScript que compila de forma nativa para Android e iOS, y soporte Web responsivo.
 - **Expo Router**: Enrutamiento basado en archivos (`app/(auth)`, `app/(main)`, `app/journaling`), simplificando navegación y deep linking.
 
-### 5.2 Estilos y Tipografía con NativeWind (Tailwind CSS)
-- **Tipografía Oficial**: **Rethink Sans** (`@expo-google-fonts/rethink-sans`) configurada como fuente base (`sans`) para toda la aplicación en variantes Regular (400), Medium (500), SemiBold (600), Bold (700) y ExtraBold (800).
+### 5.2 Estilos con NativeWind (Tailwind CSS)
 - Tokens de diseño centralizados en `tailwind.config.js`:
   - **Fondo Dark**: `#0a0a0c`, `#121216`
   - **Superficie / Cards**: `#18181f`, `#22222b`
   - **Acento Primario Nika**: Naranja de alta energía (`#ff6b00` / `#f97316`)
   - **Texto**: `#f4f4f6` (principal), `#9ca3af` (secundario)
-  - **Fuentes**: `font-sans`, `font-regular`, `font-medium`, `font-semibold`, `font-bold`, `font-extrabold`
 - Consistencia absoluta entre componentes móviles y web sin crear hojas de estilo dispares.
 
 ### 5.3 Consumo de API con TanStack Query (React Query)
