@@ -1,0 +1,62 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}"
+  ],
+  presets: [require("nativewind/preset")],
+  theme: {
+    extend: {
+      colors: {
+        background: "#0a0a0c",
+        surface: "#121216",
+        "surface-card": "#18181f",
+        "surface-border": "#22222b",
+        primary: {
+          DEFAULT: "#ff6b00",
+          hover: "#f97316",
+          dark: "#cc5500",
+        },
+        teal: {
+          50: "#F0FDFA",
+          100: "#CCFBF1",
+          200: "#99F6E4",
+          300: "#5EEAD4",
+          400: "#2DD4BF",
+          500: "#14B8A6",
+          600: "#0D9488",
+          700: "#0F766E",
+          800: "#115E59",
+          900: "#134E4A",
+          brand: "#15B5A1",
+          dark: "#0E8C7C",
+        },
+        "surface-light": "#F4F6F8",
+      },
+      fontFamily: {
+        sans: ["RethinkSans_400Regular", "sans-serif"],
+        regular: ["RethinkSans_400Regular"],
+        medium: ["RethinkSans_500Medium"],
+        semibold: ["RethinkSans_600SemiBold"],
+        bold: ["RethinkSans_700Bold"],
+        extrabold: ["RethinkSans_800ExtraBold"],
+        rethink: ["RethinkSans_400Regular"],
+        "rethink-italic": ["RethinkSans_400Regular_Italic"],
+        "rethink-medium": ["RethinkSans_500Medium"],
+        "rethink-medium-italic": ["RethinkSans_500Medium_Italic"],
+        "rethink-semibold": ["RethinkSans_600SemiBold"],
+        "rethink-semibold-italic": ["RethinkSans_600SemiBold_Italic"],
+        "rethink-bold": ["RethinkSans_700Bold"],
+        "rethink-bold-italic": ["RethinkSans_700Bold_Italic"],
+        "rethink-extrabold": ["RethinkSans_800ExtraBold"],
+        "rethink-extrabold-italic": ["RethinkSans_800ExtraBold_Italic"],
+        poppins: ["Poppins_400Regular", "sans-serif"],
+        "poppins-medium": ["Poppins_500Medium"],
+        "poppins-semibold": ["Poppins_600SemiBold"],
+        "poppins-bold": ["Poppins_700Bold"],
+        "poppins-extrabold": ["Poppins_800ExtraBold"],
+      },
+    },
+  },
+  plugins: [],
+};

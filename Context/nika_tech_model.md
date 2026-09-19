@@ -10,7 +10,7 @@
 
 1. [Stack Tecnológico Oficial](#1-stack-tecnológico-oficial)
 2. [Modelado de Datos y Persistencia](#2-modelado-de-datos-y-persistencia)
-3. [Arquitectura General y Flujo End-to-End](#3-arquitectura-general-y-flujo-end-to-end)
+3. [Arquitectura General y Distribución del Repositorio](#3-arquitectura-general-y-distribución-del-repositorio)
 4. [Backend API y Procesamiento Asíncrono](#4-backend-api-y-procesamiento-asíncrono)
 5. [Frontend y Mobile (React Native + Expo)](#5-frontend-y-mobile-react-native--expo)
 6. [Almacenamiento BLOB y Manejo de Multimedia](#6-almacenamiento-blob-y-manejo-de-multimedia)
@@ -163,38 +163,102 @@ erDiagram
 
 ---
 
-## 3. Arquitectura General y Flujo End-to-End
+## 3. Arquitectura General y Distribución del Repositorio
 
-### 3.1 Estilo de Arquitectura: Monolito Modular Asíncrono
+### 3.1 Estilo de Arquitectura: Monorepo y Monolito Modular Asíncrono
 
-El backend en FastAPI se organiza internamente en dominios independientes con responsabilidades delimitadas:
+El ecosistema NIKA está estructurado como un **Monorepo Workspace** orientado a dominios (*vertical slicing*), permitiendo alta cohesión interna por módulo, bajo acoplamiento entre capas y tipado compartido de punta a punta entre Backend y Frontend.
 
+```text
+nika-app/
+├── apps/
+│   ├── mobile/                               # Aplicación Multiplataforma (React Native + Expo SDK)
+│   │   ├── app/                              # Enrutamiento basado en archivos (Expo Router)
+│   │   │   ├── (auth)/                       # Flujos de autenticación (login, registro, recuperación)
+│   │   │   ├── (onboarding)/                 # Setup inicial, selección de arquetipos y pilares
+│   │   │   ├── (main)/                       # Navegación principal (home/radar, diario, stats, perfil)
+│   │   │   ├── _layout.tsx                   # Layout raíz y providers (React Query, Auth, Theme)
+│   │   │   └── index.tsx                     # Entrypoint / redirección inicial
+│   │   ├── src/                              # Código fuente modular de la app móvil
+│   │   │   ├── components/                   # UI Kit reutilizable (Cards, Radars, Modales, Inputs)
+│   │   │   ├── hooks/                        # Custom hooks reactivos (TanStack Query, Audio recording)
+│   │   │   ├── services/                     # Clientes API tipados, interceptores y upload a R2/S3
+│   │   │   └── styles/                       # Tokens de diseño NativeWind / Tailwind CSS
+│   │   ├── app.json                          # Manifiesto y configuración nativa de Expo
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── backend/                              # API REST & Workers Asíncronos (FastAPI + Celery)
+│       ├── alembic/                          # Versionado de esquemas y migraciones de BD
+│       │   ├── versions/                     # Scripts de migración generados
+│       │   └── env.py                        # Conexión SQLAlchemy para Alembic
+│       ├── app/                              # Núcleo de la aplicación FastAPI
+│       │   ├── core/                         # Configuraciones transversales globales
+│       │   │   ├── config.py                 # Pydantic BaseSettings (variables de entorno)
+│       │   │   ├── database.py               # AsyncEngine SQLAlchemy 2.0 y sesión async
+│       │   │   ├── redis.py                  # Conexión y cliente Redis para caché / rate-limit
+│       │   │   └── security.py               # Hashing de contraseñas (Argon2/bcrypt) y JWT
+│       │   ├── integrations/                 # Clientes de servicios e infraestructura externa
+│       │   │   ├── ai_gateway/               # Abstracción OpenAI / Anthropic, Whisper y costes
+│       │   │   └── storage.py                # Cliente S3 / Cloudflare R2 para Presigned URLs
+│       │   ├── modules/                      # Dominios de negocio aislados (Vertical Slices)
+│       │   │   ├── auth/                     # Autenticación, tokens JWT, guards de seguridad
+│       │   │   ├── users/                    # Gestión de usuarios, perfiles y suscripciones
+│       │   │   ├── pillars/                  # CRUD de pilares dinámicos y logs de puntuación
+│       │   │   ├── journaling/               # Entradas diarias (texto/audio/foto) y uploads
+│       │   │   ├── diagnosis/                # Diagnósticos de IA, prompts de arquetipos y RAG pgvector
+│       │   │   └── gamification/             # Motor de XP, rachas (streaks) y recompensas
+│       │   ├── workers/                      # Procesamiento asíncrono en segundo plano
+│       │   │   ├── celery_app.py             # Configuración del broker Redis y colas Celery
+│       │   │   └── tasks.py                  # Tareas pesadas (Whisper transcription, RAG, batching)
+│       │   └── main.py                       # Fábrica de FastAPI, middlewares CORS y ensamblado /api/v1
+│       ├── tests/                            # Suites de pruebas automatizadas (pytest + pytest-asyncio)
+│       ├── requirements.txt                  # Dependencias de producción
+│       ├── requirements-dev.txt              # Dependencias de desarrollo (Ruff, Mypy, Pytest)
+│       └── Dockerfile                        # Imagen de contenedor para backend y workers
+│
+├── packages/
+│   └── shared-types/                         # Contratos TypeScript sincronizados con OpenAPI
+│       ├── src/                              # Interfaces generadas automáticamente desde Pydantic
+│       ├── package.json
+│       └── tsconfig.json
+│
+├── Context/                                  # Documentación viva y arquitectura del proyecto
+│   ├── nika_business_model.md                # Propuesta de valor, arquetipos, pricing y unit economics
+│   └── nika_tech_model.md                    # Especificación técnica oficial y modelado de datos
+│
+├── .agents/                                  # Skills, plugins y reglas para agentes de desarrollo
+│   ├── plugins/                              # Plugins especializados (animaciones, diseño UI/UX)
+│   └── skills/                               # Habilidades y guías de buenas prácticas
+│
+├── docker-compose.yml                        # Orquestación local (Postgres 16 + pgvector, Redis)
+└── README.md                                 # Guía de inicio rápido y visión general del repo
 ```
-backend/
-├── app/
-│   ├── api/v1/                  # Routers de FastAPI
-│   │   ├── auth.py
-│   │   ├── users.py
-│   │   ├── pillars.py
-│   │   ├── journaling.py
-│   │   ├── diagnosis.py
-│   │   └── gamification.py
-│   ├── core/                    # Configuración, seguridad y base de datos
-│   │   ├── config.py
-│   │   ├── database.py          # AsyncEngine SQLAlchemy 2.0
-│   │   └── security.py          # JWT y hashing
-│   ├── models/                  # Declarative Models SQLAlchemy
-│   ├── schemas/                 # Esquemas Pydantic v2 (I/O)
-│   ├── services/                # Lógica de negocio (Services)
-│   ├── workers/                 # Tareas Celery en segundo plano
-│   │   ├── celery_app.py
-│   │   └── tasks.py             # Transcripción Whisper + LLM RAG
-│   └── integrations/            # AI Gateway y Clientes Externos
-│       ├── ai_gateway.py        # Abstracción OpenAI / Anthropic
-│       └── storage_client.py    # S3 / Cloudflare R2 Presigned URLs
-```
 
-### 3.2 Flujo End-to-End: Registro de Audio del "Espejo del Día"
+### 3.2 Responsabilidades y Flujo de Cada Directorio
+
+1. **`apps/mobile`**:
+   - **`app/`**: Implementa el enrutamiento nativo con Expo Router. Se agrupa mediante *route groups* `(auth)`, `(onboarding)` y `(main)` para desacoplar las diferentes etapas de la sesión del usuario.
+   - **`src/components/`**: Átomos, moléculas y componentes visuales reutilizables (gráficos de radar para pilares, visualizadores de onda de audio, tarjetas de diagnóstico).
+   - **`src/services/`**: Clientes Axios/Fetch tipados que consumen la API de FastAPI y gestionan la subida directa de audio/foto a los buckets BLOB (Cloudflare R2 / S3) mediante Presigned URLs.
+   - **`src/hooks/`**: Encapsulan la lógica reactiva y la caché de datos mediante TanStack Query (React Query), evitando llamadas redundantes al backend.
+
+2. **`apps/backend/app/modules`** *(Enfoque Vertical Slice)*:
+   - Cada subcarpeta dentro de `modules/` (`auth`, `users`, `pillars`, `journaling`, `diagnosis`, `gamification`) contiene:
+     - `router.py`: Endpoints expuestos bajo `/api/v1/{module}`.
+     - `schemas.py`: Modelos Pydantic v2 para validación estricta de Request y Response.
+     - `models.py`: Entidades SQLAlchemy asociadas al dominio.
+     - `service.py`: Lógica de negocio y consultas parametrizadas.
+
+3. **`packages/shared-types`**:
+   - Mantiene la consistencia de tipos entre backend y frontend. Se alimenta de la especificación OpenAPI generada por FastAPI (`/openapi.json`) y produce interfaces TypeScript consumibles por `apps/mobile`.
+
+4. **`Context/`**:
+   - Almacena el conocimiento fundamental del producto, dividiendo la visión de negocio (`nika_business_model.md`) de la implementación tecnológica (`nika_tech_model.md`).
+
+---
+
+### 3.3 Flujo End-to-End: Registro de Audio del "Espejo del Día"
 
 El flujo de audio e inferencia es asíncrono para garantizar respuesta inmediata y desacople de carga:
 
@@ -266,12 +330,14 @@ sequenceDiagram
 - **Base de Código Única**: Una sola base de código en TypeScript que compila de forma nativa para Android e iOS, y soporte Web responsivo.
 - **Expo Router**: Enrutamiento basado en archivos (`app/(auth)`, `app/(main)`, `app/journaling`), simplificando navegación y deep linking.
 
-### 5.2 Estilos con NativeWind (Tailwind CSS)
+### 5.2 Estilos y Tipografía con NativeWind (Tailwind CSS)
+- **Tipografía Oficial**: **Rethink Sans** (`@expo-google-fonts/rethink-sans`) configurada como fuente base (`sans`) para toda la aplicación en variantes Regular (400), Medium (500), SemiBold (600), Bold (700) y ExtraBold (800).
 - Tokens de diseño centralizados en `tailwind.config.js`:
   - **Fondo Dark**: `#0a0a0c`, `#121216`
   - **Superficie / Cards**: `#18181f`, `#22222b`
   - **Acento Primario Nika**: Naranja de alta energía (`#ff6b00` / `#f97316`)
   - **Texto**: `#f4f4f6` (principal), `#9ca3af` (secundario)
+  - **Fuentes**: `font-sans`, `font-regular`, `font-medium`, `font-semibold`, `font-bold`, `font-extrabold`
 - Consistencia absoluta entre componentes móviles y web sin crear hojas de estilo dispares.
 
 ### 5.3 Consumo de API con TanStack Query (React Query)
