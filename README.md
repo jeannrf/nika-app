@@ -4,7 +4,7 @@ Sistema de acompañamiento y autoconocimiento estructurado para jóvenes de alto
 
 ---
 
-## 🚀 Stack Tecnológico Oficial
+## Stack Tecnológico Oficial
 
 | Capa / Componente | Tecnología Seleccionada | Justificación Técnica |
 |---|---|---|
@@ -20,7 +20,7 @@ Sistema de acompañamiento y autoconocimiento estructurado para jóvenes de alto
 
 ---
 
-## 🏛️ Arquitectura del Repositorio (Monolito Modular)
+## Arquitectura del Repositorio (Monolito Modular)
 
 El proyecto está organizado como un monorepo workspace orientado a dominios (vertical slicing), manteniendo alta cohesión dentro de cada módulo y bajo acoplamiento:
 
@@ -80,7 +80,7 @@ nika-app/
 
 ---
 
-## 🔄 Flujo de Contratos y Type-Safety (Python ↔ TypeScript)
+## Flujo de Contratos y Type-Safety (Python ↔ TypeScript)
 
 Para evitar la desincronización entre los esquemas Pydantic del backend y los tipos TypeScript de la app móvil:
 1. FastAPI genera automáticamente la especificación `openapi.json` a partir de los esquemas Pydantic v2.
@@ -92,7 +92,7 @@ Para evitar la desincronización entre los esquemas Pydantic del backend y los t
 
 ---
 
-## 📚 Documentación Adicional
+## Documentación Adicional
 
 - [Especificación Técnica y Arquitectura](file:///home/jean/Desktop/UNI/Proyectos/nika-app/Context/nika_tech_model.md)
 - [Propuesta de Valor y Modelo de Negocio](file:///home/jean/Desktop/UNI/Proyectos/nika-app/Context/nika_business_model.md)
